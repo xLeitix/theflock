@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "packet_id": "f3dacd9714d546e99a88590c63c23978",
+  "run_dir": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030",
+  "round": 1,
+  "role": "architecture-review",
+  "stage": "custom",
+  "scope": "Entire document, including requirements, contracts, architecture, security, delivery, testing, recovery and implementation sequence",
+  "mode": "review",
+  "target_origin": "/Users/phileitn/git/projects/flock/docs/designs/flock-design.md",
+  "target_snapshot": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+  "target_sha256": "5d9b1b0348cafc4fb643eb04e510c76d00ade96079b315083be4a8d62e3e9b4d",
+  "context": [
+    {
+      "path": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030-inputs/requirements.md",
+      "sha256": "469a26bacf83b0de6f109c46924ff5823566fd384ea256816468e58605768002"
+    },
+    {
+      "path": "/Users/phileitn/git/projects/flock/docs/designs/provider-evidence.md",
+      "sha256": "cf16e72f557d064a2201840f02b1f905981de5e5705de968398c489017544e4b"
+    },
+    {
+      "path": "/Users/phileitn/git/projects/flock/docs/designs/mockup-inventory.txt",
+      "sha256": "5fe4f5a5ef0577010f095d64104bc90a1fe387a64089bd2f7f05a4877b822245"
+    },
+    {
+      "path": "/Users/phileitn/git/projects/flock/docs/designs/reference/map-mobile.png",
+      "sha256": "f11f85447fe79c5620bbebcd0228a2ee8823421665d7f14b308604f7bf740dd2"
+    },
+    {
+      "path": "/Users/phileitn/git/projects/flock/docs/designs/reference/map-desktop.png",
+      "sha256": "e01ed7ae97b49fcf37d251b399e083cdbd981efe2bf5b09ff68fe637fbef6e1a"
+    }
+  ],
+  "search_roots": [],
+  "persona": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030-inputs/review-persona.md",
+  "standard": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030-inputs/review-standard.md",
+  "contract": "/Users/phileitn/.codex/egm-codex/skills/egm-review/references/reviewer-contract.md",
+  "isolation_required": "fresh_conversation",
+  "write_policy": "no writes",
+  "attempt": 1
+}

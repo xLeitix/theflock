@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "target": "/Users/phileitn/git/projects/flock/docs/designs/flock-design.md",
+  "preset": "custom",
+  "max_rounds": 1,
+  "required_slots": [
+    {
+      "stage": "custom",
+      "role": "architecture-review"
+    }
+  ],
+  "rounds": [
+    {
+      "number": 1,
+      "snapshot": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+      "target_sha256": "5d9b1b0348cafc4fb643eb04e510c76d00ade96079b315083be4a8d62e3e9b4d",
+      "reports": {
+        "custom--architecture-review": {
+          "path": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/reports/custom--architecture-review.json",
+          "sha256": "3c30d3e81da65d52059ac1e02b1ced8cee349bd546fe63401010e250687f90b0",
+          "status": "complete",
+          "attempt": 1
+        }
+      }
+    }
+  ]
+}

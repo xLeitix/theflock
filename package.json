@@ -1,0 +1,47 @@
+{
+  "name": "flock-local-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12 <26"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:setup": "node scripts/mongo.mjs start",
+    "dev:stop": "node scripts/dev.mjs stop",
+    "dev:seed": "tsx apps/api/src/seed-cli.ts",
+    "dev:api": "tsx watch apps/api/src/index.ts",
+    "dev:web": "vite --config apps/web/vite.config.ts",
+    "build": "vite build --config apps/web/vite.config.ts",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "test": "tsx --test tests/*.test.ts tests/*.test.mjs",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": {
+    "bootstrap": "5.3.8",
+    "connect-mongo": "5.1.0",
+    "express": "5.1.0",
+    "express-session": "1.18.2",
+    "helmet": "8.1.0",
+    "maplibre-gl": "6.16.0",
+    "mongodb": "6.20.0",
+    "vue": "3.5.44",
+    "vue-router": "4.6.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/express": "5.0.3",
+    "@types/express-session": "1.18.2",
+    "@types/node": "24.10.0",
+    "@types/supertest": "6.0.3",
+    "@vitejs/plugin-vue": "6.0.1",
+    "supertest": "7.1.4",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vite": "7.3.7",
+    "vue-tsc": "3.1.1"
+  }
+}

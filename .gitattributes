@@ -1,0 +1,4 @@
+# Stored review patches contain intentional single-space blank context lines.
+*.diff -whitespace
+# Preserve the original supplied mockup, including its whitespace.
+"Pigeon Tracker.html" -whitespace

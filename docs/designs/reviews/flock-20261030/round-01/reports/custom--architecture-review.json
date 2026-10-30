@@ -1,0 +1,117 @@
+{
+  "packet_id": "f3dacd9714d546e99a88590c63c23978",
+  "role": "architecture-review",
+  "stage": "custom",
+  "target_sha256": "5d9b1b0348cafc4fb643eb04e510c76d00ade96079b315083be4a8d62e3e9b4d",
+  "status": "complete",
+  "isolation": "fresh_conversation",
+  "inspected_files": [
+    "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/packets/custom--architecture-review.json",
+    "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030-inputs/review-persona.md",
+    "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030-inputs/review-standard.md",
+    "/Users/phileitn/.codex/egm-codex/skills/egm-review/references/reviewer-contract.md",
+    "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+    "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030-inputs/requirements.md",
+    "/Users/phileitn/git/projects/flock/docs/designs/provider-evidence.md",
+    "/Users/phileitn/git/projects/flock/docs/designs/mockup-inventory.txt",
+    "/Users/phileitn/git/projects/flock/docs/designs/reference/map-mobile.png",
+    "/Users/phileitn/git/projects/flock/docs/designs/reference/map-desktop.png"
+  ],
+  "limitations": [
+    "Reviewed the entire snapshot, requirements, provider evidence, complete mockup text inventory and both supplied map reference images. Snapshot and explicit-context hashes matched the updated packet.",
+    "This is a design review. No implementation, tests, live provider settings, IAM permissions, deployment or recovery behavior was executed or independently certified.",
+    "Visual inspection covers the supplied mobile and desktop map renders; other artboards were inspected through their text inventory rather than rendered images."
+  ],
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "Major",
+      "title": "Account erasure is not serialized against all concurrent writes",
+      "evidence": [
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 129,
+          "end_line": 131
+        },
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 169,
+          "end_line": 169
+        },
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 189,
+          "end_line": 189
+        }
+      ],
+      "consequence": "The design explicitly introduces an authorization-fence write for claims, but does not require ordinary contribution transactions or asynchronous finalization to participate in that fence. A feeding request can authorize an active account, pause, then commit a new author-linked record after deletion has marked the account deleting, purged its contributions and reported completion. Reading account state earlier in a Mongo transaction does not by itself serialize an insertion into another collection against an account-state change. This leaves the promised rejection of writes during deletion and completed erasure dependent on an unstated concurrency rule.",
+      "recommendation": "Extend the account authorization fence to every transaction that creates or modifies user-owned data, with deletion and suspension updating the same fence. Define how asynchronous media/export work checks the account and resource generation before finalization, and how rejected work is retired. Require a concurrency test that pauses an authorized creation before commit, completes deletion, and proves that the creation cannot subsequently commit or restore personal data."
+    },
+    {
+      "id": "F2",
+      "severity": "Major",
+      "title": "Hiding a place has no defined effect on public child records that expose its location",
+      "evidence": [
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 133,
+          "end_line": 133
+        },
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 143,
+          "end_line": 150
+        },
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 160,
+          "end_line": 160
+        },
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 255,
+          "end_line": 255
+        }
+      ],
+      "consequence": "An unpublished place returns 404 from its own endpoint, while a public care DTO explicitly includes that place's point. The design does not specify whether hiding the parent place suppresses its otherwise-visible care cases, direct child endpoints or other projections. An implementation that checks only each requested record's visibility can therefore continue exposing a sensitive place coordinate through a known care-case ID after a moderator hides the place. The stated hidden-record tests cover map/search/counts but do not settle this direct-read behavior.",
+      "recommendation": "Define effective public visibility across parent and child records. Require public care summaries and other place-derived projections to suppress a hidden parent's location, preferably by treating children as publicly unreadable while the parent is hidden. State separately whether existing participants retain private care access. Apply the rule consistently to direct reads, lists, counts and mutations, and test known child URLs before and after hiding and unhiding a place."
+    },
+    {
+      "id": "F3",
+      "severity": "Major",
+      "title": "Reopening a case is undefined after its private details have been purged",
+      "evidence": [
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 114,
+          "end_line": 115
+        },
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 131,
+          "end_line": 131
+        },
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 152,
+          "end_line": 152
+        },
+        {
+          "file": "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md",
+          "line": 189,
+          "end_line": 189
+        }
+      ],
+      "consequence": "The state machine permits reporter/moderator reopening of a resolved case without a time or data-availability restriction, but retention removes resolved-case private details and media after 30 days. The resulting public case can therefore remain eligible for reopening after the observation location and description needed by its private view have been removed. The design gives no rule for rejecting that transition, collecting a fresh observation or distinguishing an intentionally purged case from a malformed active case.",
+      "recommendation": "Add an explicit post-purge lifecycle rule. Either make purged cases permanently non-reopenable and direct users to create a new report, or define reopening as a fresh observation that supplies newly validated private details without restoring erased data. Record purge state separately from resolution state, define the API/UI response, and test reopening on both sides of the retention boundary and concurrently with the purge worker."
+    }
+  ],
+  "recorded_source_hashes": {
+    "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030-inputs/requirements.md": "469a26bacf83b0de6f109c46924ff5823566fd384ea256816468e58605768002",
+    "/Users/phileitn/git/projects/flock/docs/designs/provider-evidence.md": "cf16e72f557d064a2201840f02b1f905981de5e5705de968398c489017544e4b",
+    "/Users/phileitn/git/projects/flock/docs/designs/mockup-inventory.txt": "5fe4f5a5ef0577010f095d64104bc90a1fe387a64089bd2f7f05a4877b822245",
+    "/Users/phileitn/git/projects/flock/docs/designs/reference/map-mobile.png": "f11f85447fe79c5620bbebcd0228a2ee8823421665d7f14b308604f7bf740dd2",
+    "/Users/phileitn/git/projects/flock/docs/designs/reference/map-desktop.png": "e01ed7ae97b49fcf37d251b399e083cdbd981efe2bf5b09ff68fe637fbef6e1a",
+    "/Users/phileitn/git/projects/flock/docs/designs/reviews/flock-20261030/round-01/target.md": "5d9b1b0348cafc4fb643eb04e510c76d00ade96079b315083be4a8d62e3e9b4d"
+  }
+}

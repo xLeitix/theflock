@@ -1,0 +1,471 @@
+## Screen 01
+Flock — map (mobile)
+{{p.label}}
+Search places
+EN
+ME
+Log in
+≤ 2 days · {{greenCount}}
+≤ 4 days · {{yellowCount}}
+Hungry · {{redCount}}
+Needs care · {{medCount}}
+{{sel.name}}
+{{sel.dist}} away · {{sel.lastText}}
+{{sel.status}}
+Flock: {{sel.flock}}
+{{sel.medTitle}}
+{{sel.medMeta}}
+Log feeding
+Bird in need
+Log in to record a feeding
+Who fed them last
+No feedings logged yet.
+{{l.initials}}
+{{l.who}}
+{{l.when}} · {{l.size}} flock
+{{l.note}}
+Map
+Messages
+3
+Messages
+Emergency
+{{profileLabel}}
+Join the flock
+The map is open to everyone. Log in to record feedings, add new places and message other feeders.
+Continue with Facebook
+Not now, keep browsing
+We use your Facebook name and profile picture, and never post for you.
+Privacy policy
+
+## Screen 02
+Flock — add a place
+Drag map to adjust
+New place
+Using your location · accurate to 12 m
+Name
+Notes (optional)
+I fed them here just now
+Save place
+
+## Screen 03
+Flock — messages (mobile)
+Messages
+Search people
+ML
+Maja Lind
+08:12
+Could you take Fountain Square tomorrow?
+LS
+Leo Svensson
+Yesterday
+The gulls at Harbour Steps are a menace
+AN
+Aisha Noor
+Mon
+Found a good grain supplier, want the link?
+JB
+Jonas Berg
+22 Oct
+You: Thanks, see you at the station
+SE
+Sofia Ek
+19 Oct
+Library Park gate is closed on Sundays
+Map
+Messages
+3
+Emergency
+Profile
+
+## Screen 04
+Flock — chat with Maja (mobile)
+ML
+Maja Lind
+42 feedings · Fountain Square regular
+TUESDAY
+Hi! Saw you logged Riverside Benches. Do you go there every evening?
+Most evenings around 18:00, on my way home.
+TODAY
+Today
+Fountain Square
+Fed today · 180 m away
+I'm away tomorrow and Thursday. Could you take Fountain Square tomorrow?
+08:12
+Message
+
+## Screen 05
+Flock — city map
+Flock
+Search places
+Map
+Emergency numbers
+Messages
+3
+ME
+Log in
+Language
+English
+Svenska
+MARKET SQ.
+CITY PARK
+RIVER QUAY
+KING STREET
+New place · your location
+{{p.label}}
+Fed ≤ 2 days · {{greenCount}}
+≤ 4 days · {{yellowCount}}
+Hungry · {{redCount}}
+Needs care · {{medCount}}
+Log in to add places
+Add place here
+Your location · ±12 m
+{{sel.name}}
+{{sel.dist}} from you · added by {{sel.addedBy}}
+{{sel.status}}
+{{sel.lastText}}
+Usual flock:
+{{sel.flock}}
+{{sel.medTitle}}
+{{sel.medMeta}}
+View case
+Log in to record a feeding
+I fed them now
+Directions
+Report bird in need
+Feeding log
+No feedings logged yet. Be the first.
+{{l.initials}}
+{{l.who}}
+{{l.when}}
+{{l.size}} flock
+{{l.note}}
+New place
+Pinned at your current location (±12 m). Drag the pin to adjust.
+Name
+Notes (optional)
+I fed them here just now
+Save place
+Cancel
+Pick a place on the map
+See who fed the pigeons last, or log your own visit.
+{{redCount}} places are hungry right now.
+
+## Screen 06
+Flock — messages
+Flock
+Map
+Emergency numbers
+Messages
+3
+Language
+English
+Svenska
+ME
+Messages
+Search people
+ML
+Maja Lind
+08:12
+Could you take Fountain Square tomorrow?
+LS
+Leo Svensson
+Yesterday
+The gulls at Harbour Steps are a menace
+AN
+Aisha Noor
+Mon
+Found a good grain supplier, want the link?
+JB
+Jonas Berg
+22 Oct
+You: Thanks, see you at the station
+ML
+Maja Lind
+42 feedings logged · usually at Fountain Square
+TUESDAY
+Hi! Saw you logged Riverside Benches. Do you go there every evening?
+Most evenings around 18:00, on my way home.
+TODAY
+Today
+Fountain Square
+Last fed today · 180 m from you
+I'm away tomorrow and Thursday. Could you take Fountain Square tomorrow?
+08:12
+Message
+
+## Screen 07
+Flock — log in
+Language
+English
+Svenska
+Flock
+Keep the city's pigeons fed
+The map is open to everyone. Log in to record feedings, add places and message other feeders.
+Continue with Facebook
+Browse the map first
+We use your Facebook name and profile picture. We never post on your behalf. By continuing you agree to the
+Terms
+and
+Privacy policy
+.
+Fed in the last 2 days
+Fed in the last 4 days
+Needs feeding
+
+## Screen 08
+Flock — login prompt
+Today
+Fountain Square
+You're about to record a feeding
+Log in to record your feeding
+Your name appears in the place's feeding log, so other feeders know who was there and can message you.
+Record feedings and add new places
+Message other feeders
+We never post to Facebook for you
+Continue with Facebook
+Not now, keep browsing
+
+## Screen 09
+Flock — Facebook consent handoff
+Secure Facebook login page
+HANDOFF · SHOWN BY FACEBOOK
+Facebook shows and controls this screen, in the Facebook app if it's installed, or else a secure browser sheet. Below is a placeholder for what it asks; the design stays Facebook's.
+Flock is requesting access to:
+Name and profile picture
+public_profile (required)
+Email address
+email (optional, user can untick)
+PROTOTYPE · PICK AN OUTCOME
+User approves → Welcome
+User cancels → back to map
+
+## Screen 10
+Flock — welcome
+Connected with Facebook
+AC
+Welcome to the flock, Alex
+Check how you'll appear to other feeders. You can change this later in your profile.
+Display name
+Shown in feeding logs and messages. From Facebook: Alex Carter
+Let other feeders message me
+You can block anyone later
+Use my Facebook photo
+Off shows your initials
+Next we'll record your feeding at Fountain Square.
+Continue
+
+## Screen 11
+Flock — location permission
+You · ±12 m
+LAST STEP
+Show where you are on the map
+See the hungry spots closest to you
+Drop a new place where you're standing
+Only used while the app is open. Never shared with other feeders.
+Your phone will ask for permission next.
+Allow location
+Not now
+
+## Screen 12
+Flock — login cancelled
+Search places
+Log in
+Login cancelled
+Your feeding wasn't recorded. You can keep browsing.
+Try again
+Map
+Messages
+Log in
+
+## Screen 13
+Flock — log a feeding
+Log a feeding
+Fountain Square · today, 10:42 ·
+Change
+How big was the flock?
+{{z.label}}
+{{z.range}}
+A rough guess is fine. Helps others bring the right amount of food.
+What did you feed?
+Grain mix
+Seeds
+Dried peas
+Other
+Notes (optional)
+Saw a bird that's hurt or sick?
+Report it so someone can help
+Save · {{chosen}} flock
+
+## Screen 14
+Flock — report a bird in need
+Report a bird in need
+Fountain Square
+Pinned at your location · ±12 m
+Move
+What's wrong?
+Pick all that apply
+{{i.label}}
+How urgent?
+{{u.label}}
+How many birds?
+Photo
+Add
+Describe what you see
+I'm staying with the bird for now
+Badly hurt? Call a wildlife rescue right away, and don't try to treat injuries yourself.
+See emergency numbers
+Send report · alert nearby feeders
+
+## Screen 15
+Flock — medical case
+Bird in need
+[Photo from reporter]
+Needs a helper
+Urgency: today
+String tangled on a foot
+Grey pigeon by the fountain bench, thread wrapped round its right foot. Still walking, but limping.
+Place
+Fountain Square
+Distance
+180 m away
+Birds affected
+1
+Flock here
+Large (50+)
+Updates
+Leo Svensson saw it again
+09:15 · "Still there, near the east bench."
+Reported by Maja Lind
+08:30 · String on feet, limping
+I can help, I'm on my way
+Message Maja
+Mark resolved
+
+## Screen 16
+Flock — emergency numbers
+Emergency numbers
+Tap a number to call
+A person is in danger
+Traffic, falls, fire. Never risk yourself for a bird.
+112
+Birds in need
+[LOCAL WILDLIFE RESCUE]
+Injured or sick wild birds, incl. pigeons
+[OPENING HOURS]
+Call [PHONE NUMBER]
+Emergency vet, 24/7
+[EMERGENCY VET CLINIC]
+Call
+Report cruelty or neglect
+Police, non-emergency
+Animal cruelty, poisoned birds
+114 14
+Call
+County animal welfare
+Länsstyrelsen · [COUNTY]
+Call
+While you wait for help
+Put the bird in a ventilated cardboard box with a towel. Keep it dark, quiet and warm. Don't give food or water. Wash your hands afterwards.
+Numbers checked [DATE].
+Report a wrong number
+
+## Screen 17
+Flock — emergency numbers
+Flock
+Map
+Messages
+Emergency numbers
+Language
+English
+Svenska
+Emergency numbers
+Who to call when a bird needs help, or when something is wrong. On a phone, tap a number to call it.
+A person is in danger
+Traffic, falls, fire. Never put yourself at risk to reach a bird.
+112
+BIRDS IN NEED
+[LOCAL WILDLIFE RESCUE]
+Injured or sick wild birds, incl. pigeons · [OPENING HOURS]
+[PHONE NUMBER]
+Copy
+BIRDS IN NEED
+Emergency vet, 24/7
+[EMERGENCY VET CLINIC] · [ADDRESS]
+[PHONE NUMBER]
+Copy
+CRUELTY OR NEGLECT
+Police, non-emergency
+Animal cruelty, poisoned birds
+114 14
+Copy
+CRUELTY OR NEGLECT
+County animal welfare
+Länsstyrelsen · [COUNTY]
+[PHONE NUMBER]
+Copy
+While you wait for help
+Put the bird in a ventilated cardboard box with a towel. Keep it dark, quiet and warm. Don't give food or water. Wash your hands afterwards.
+Numbers checked [DATE].
+Report a wrong number
+
+## Screen 18
+Flock — language
+Language · Språk
+{{l.name}}
+{{l.sub}}
+Changes the app's text. Place names, notes and messages stay in the language they were written in.
+{{doneLabel}}
+
+## Screen 19
+Flock — karta
+I dag
+3d
+6d
+1d
+Sök platser
+SV
+AC
+≤ 2 dagar · 4
+≤ 4 dagar · 2
+Hungriga · 2
+Behöver vård · 2
+Fountain Square
+180 m bort · matades i dag
+Nyligen matade
+Flock: stor
+Snöre intrasslat runt en fot
+Rapporterad för 2 h sedan · behöver hjälp
+Logga matning
+Fågel i nöd
+Senast matade
+ML
+Maja Lind
+i dag 07:50 · stor flock
+Half a bag of grain mix. Around 60 birds.
+JB
+Jonas Berg
+mån 26 okt, 16:20 · stor flock
+Frön och torkade ärtor.
+
+## Screen 20
+Flock — logga matning
+Logga matning
+Fountain Square · i dag 10:42 ·
+Ändra
+Hur stor var flocken?
+Liten
+under 15
+Mellan
+15–50
+Stor
+fler än 50
+En ungefärlig gissning räcker. Det hjälper andra att ta med rätt mängd mat.
+Vad gav du dem?
+Fröblandning
+Solrosfrön
+Torkade ärtor
+Annat
+Anteckningar (valfritt)
+Såg du en skadad eller sjuk fågel?
+Rapportera så att någon kan hjälpa till
+Spara · mellanstor flock

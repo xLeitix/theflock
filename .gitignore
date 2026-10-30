@@ -1,0 +1,13 @@
+node_modules/
+.local/
+dist/
+apps/web/dist/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+gha-creds-*.json
+playwright-report/
+test-results/
+.DS_Store
