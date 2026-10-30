@@ -17,4 +17,4 @@ The five [specialist proposals](specialists/) and [original independent review](
 
 ## Implementation status
 
-A local Vue/Express/MongoDB prototype runs at http://127.0.0.1:4173; README contains actual commands and limits. The current revision passed independent design and implementation reviews,30 API/runtime tests and6 browser workflows; see [execution evidence](../development/community-care-validation.md). GitHub source/CI is a separate delivery step; GCP/Facebook/DNS deployment is not implemented. The original `Pigeon Tracker.html` remains unchanged.
+A local Vue/Express/MongoDB prototype runs at http://127.0.0.1:4173; README contains actual commands and limits. The current revision passed independent design and implementation reviews, 30 API/runtime tests and 6 browser workflows; see [execution evidence](../development/community-care-validation.md). Source is published in [xLeitix/theflock](https://github.com/xLeitix/theflock), and the first Ubuntu CI run passed; see [pipeline evidence and boundaries](../development/ci-cd.md). GCP/Facebook/DNS deployment is not implemented. The original `Pigeon Tracker.html` remains unchanged.

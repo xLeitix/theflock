@@ -59,4 +59,8 @@ No long-lived GitHub secret is required by the intended WIF design. Facebook app
 
 ## Validation record
 
-The local prototype's current test evidence is in [community-care-validation.md](community-care-validation.md). Workflow syntax, pinned upstream revisions and installer checksum are checked during this change. An actual GitHub runner result is a separate acceptance gate after the first repository push; local macOS tests do not establish Ubuntu-runner or production deployment success.
+The local prototype's current test evidence is in [community-care-validation.md](community-care-validation.md). Workflow syntax passed actionlint; pinned upstream revisions and the installer checksum were verified. Both branches of the deployment guard were exercised: disabled succeeds with “Not deployed”; an attempted enable fails without deploying.
+
+The first application commit, `a2b16f62dab95facd8162ae6e508216900328639`, passed [GitHub CI run 41139178703](https://github.com/xLeitix/theflock/actions/runs/41139178703) on 30 October 2026. The Ubuntu 22.04 / Node.js 24 runner successfully installed and started authenticated MongoDB, typechecked, passed all 30 API/runtime tests, built the frontend, passed all 6 Chromium workflows, stopped its owned services and uploaded the allowlisted artifacts. This verifies the CI starting point on a real GitHub runner; it does not establish production deployment success.
+
+The follow-on [CD readiness run 41139358030](https://github.com/xLeitix/theflock/actions/runs/41139358030) also succeeded through the disabled guard. No cloud deployment occurred.
