@@ -11,7 +11,7 @@ await mkdir('.local/cloud/screenshots',{recursive:true,mode:0o700});
 const result={checkedAt:new Date().toISOString(),viewports:[],feeding:null};
 try{
  for(const viewport of [{width:390,height:844},{width:1440,height:1000}]){
-  const context=await browser.newContext({viewport,httpCredentials:{username:credentials.previewUsername,password:credentials.previewPassword}});
+  const context=await browser.newContext({viewport,httpCredentials:{origin:'https://theflock.icet-lab.eu',username:credentials.previewUsername,password:credentials.previewPassword}});
   const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('https://theflock.icet-lab.eu',{waitUntil:'networkidle'});
   await expect(page.getByText('PROTECTED PREVIEW',{exact:true})).toBeVisible();
@@ -36,6 +36,8 @@ try{
   const size=await page.evaluate(()=>({viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth}));
   expect(size.page).toBeLessThanOrEqual(size.viewport+1);expect(errors).toEqual([]);
   await page.screenshot({path:`.local/cloud/screenshots/preview-${viewport.width}.png`,fullPage:true});
+  await page.goto('https://theflock.icet-lab.eu/emergency',{waitUntil:'networkidle'});
+  await expect(page.getByText('No verified contacts yet',{exact:true})).toBeVisible();
   result.viewports.push({width:viewport.width,overflow:false,pageErrors:errors});
   await context.close();
  }

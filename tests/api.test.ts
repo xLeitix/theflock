@@ -185,6 +185,14 @@ test('Mongo sessions survive app recreation; logout tombstones prevent stale tou
 test('session absolute expiry is enforced before TTL cleanup',async()=>{
  const auth=await login('member');await db.collection<{_id:string}>('sessions').updateOne({_id:auth.sid},{$set:{'session.absoluteExpiresAt':Date.now()-1}});assert.equal((await auth.agent.get('/api/v1/session').expect(200)).body.user,null);
 });
+test('ordinary session reads do not roll cookies; server idle expiry stays shorter than browser absolute expiry',async()=>{
+ const auth=await login('member');
+ const response=await auth.agent.get('/api/v1/session').expect(200);
+ assert.equal(response.headers['set-cookie'],undefined);
+ const stored=await db.collection<any>('sessions').findOne({_id:auth.sid});
+ assert.ok(stored.expires.getTime()<=Date.now()+86400000);
+ assert.ok(stored.session.absoluteExpiresAt>Date.now()+6*86400000);
+});
 test('Stockholm dates and feeding recency boundaries remain explicit',()=>{
  const now=Date.UTC(2026,9,30);assert.equal(recency(null,now),'unknown');assert.equal(recency(new Date(now-48*3600000),now),'recent');assert.equal(recency(new Date(now-48*3600000-1),now),'due');assert.equal(recency(new Date(now-96*3600000),now),'due');assert.equal(recency(new Date(now-96*3600000-1),now),'overdue');assert.equal(calendarDate(new Date('2026-10-29T23:30:00Z')),'2026-10-30');
 });

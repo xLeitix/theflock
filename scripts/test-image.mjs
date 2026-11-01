@@ -35,6 +35,7 @@ try{
  // loopback proxy hostname instead. The raw Host path is covered by Supertest.
  await expect('/api/v1/session',421,{headers:{'X-Forwarded-Host':'other.invalid'}});
  const home=await expect('/',200);assert.match(await home.text(),/id="app"/);assert.match(home.headers.get('content-security-policy'),/frame-ancestors 'none'/);
+ const emergency=await expect('/emergency',200);assert.match(await emergency.text(),/id="app"/);
  for(const path of ['/.local/runtime.json','/run/flock/runtime.json','/.env','/package.json','/apps/api/src/app.ts'])await expect(path,404);
  const health=await (await expect('/health/ready',200)).json();assert.equal(health.revision,revision);
  const bootstrap=await expect('/api/v1/session',200);const session=await bootstrap.json();assert.equal(session.mode,'preview');

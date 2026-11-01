@@ -220,3 +220,26 @@ test('late geolocation cannot overwrite manual edits, confirmed pins or a differ
   await expect(page.getByTestId('latitude')).toHaveValue('57.70889'); await expect(page.getByTestId('public-location-confirmed')).toBeChecked();
   await closeDialog(page);
 });
+
+test('a delayed anonymous session refresh cannot replace a successful login', async ({page}) => {
+  await page.goto('/');
+  await expect(page.getByTestId('record-feeding')).toBeVisible();
+  let captured!:()=>void;let release!:()=>void;
+  const ready=new Promise<void>(resolve=>{captured=resolve;});
+  const waiting=new Promise<void>(resolve=>{release=resolve;});
+  await page.route('**/api/v1/session',async route=>{
+    const response=await route.fetch();captured();await waiting;await route.fulfill({response});
+  });
+  try {
+    await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+    await ready;
+    await login(page,'member');
+    const late=page.waitForResponse(response=>new URL(response.url()).pathname==='/api/v1/session');
+    release();await late;
+    await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+    await expect(page.getByTestId('account-menu')).toBeVisible();
+    await page.unroute('**/api/v1/session');
+    await page.reload();
+    await expect(page.getByTestId('account-menu')).toBeVisible();
+  }finally{release();}
+});

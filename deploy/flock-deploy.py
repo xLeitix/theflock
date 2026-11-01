@@ -95,7 +95,19 @@ def deploy(revision, digest):
             run(['docker', 'login', '-u', 'oauth2accesstoken', '--password-stdin', 'europe-north2-docker.pkg.dev'], input=token, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
             run(['docker', 'pull', image], env=env, stdout=subprocess.DEVNULL)
             inspection = json.loads(run(['docker', 'image', 'inspect', image], capture_output=True).stdout)[0]
-            if inspection['Id'] != eligible['configDigest'] or inspection['Config']['Labels'].get('org.opencontainers.image.revision') != revision:
+            manifest = json.loads(run(['docker', 'manifest', 'inspect', image], env=env, capture_output=True).stdout)
+            platform_digest = digest
+            if 'manifests' in manifest:
+                platforms = [m for m in manifest['manifests'] if m.get('platform', {}).get('os') == 'linux' and m.get('platform', {}).get('architecture') == 'amd64']
+                if len(platforms) != 1:
+                    raise RuntimeError('Release must contain exactly one Linux amd64 image.')
+                platform_digest = platforms[0]['digest']
+                manifest = json.loads(run(['docker', 'manifest', 'inspect', IMAGE + '@' + platform_digest], env=env, capture_output=True).stdout)
+            config_digest = manifest.get('config', {}).get('digest')
+            # Docker's classic store exposes the config digest as Id; its newer
+            # containerd store exposes the manifest digest. Verify both identities
+            # explicitly instead of treating the store-specific Id as universal.
+            if config_digest != eligible['configDigest'] or inspection['Id'] not in {config_digest, platform_digest, digest} or image not in inspection.get('RepoDigests', []) or inspection.get('Architecture') != 'amd64' or inspection.get('Os') != 'linux' or inspection['Config']['Labels'].get('org.opencontainers.image.revision') != revision:
                 raise RuntimeError('Pulled image differs from the verified image.')
             if latest() != revision:
                 print('Superseded during preflight: skipped; no deployment.')
@@ -106,6 +118,9 @@ def deploy(revision, digest):
                 print('This exact release is already healthy; no change.')
                 return
             run(['/usr/local/sbin/flock-backup'], stdout=subprocess.DEVNULL)
+            if latest() != revision:
+                print('Superseded during backup: skipped; no deployment.')
+                return
             atomic_json(STATE / 'pending.json', {'previous': previous, 'candidate': eligible})
             try:
                 # Stop gracefully so Mongo transactions drain before removing the container.

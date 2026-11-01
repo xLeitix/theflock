@@ -28,7 +28,7 @@ const emergencyLoading = ref(false), emergencyError = ref('');
 const geoState = ref<'idle' | 'locating' | 'located' | 'manual' | 'denied' | 'unavailable' | 'timeout' | 'unsupported' | 'outside'>('idle');
 const geoAccuracy = ref<number | null>(null);
 let locationRequest = 0, geoTimer: ReturnType<typeof setTimeout> | undefined;
-let detailSequence = 0, caseSequence = 0;
+let detailSequence = 0, caseSequence = 0, sessionSequence = 0;
 let casePoll: ReturnType<typeof setInterval> | undefined;
 let idempotency: { signature: string; key: string } | undefined;
 const filteredPlaces = computed(() => places.value.filter(place => place.name.toLocaleLowerCase(locale.value).includes(search.value.trim().toLocaleLowerCase(locale.value)) && (filter.value === 'all' || (filter.value === 'care' ? place.careCount > 0 : place.recency === filter.value))));
@@ -85,7 +85,9 @@ function resetPlace() { invalidateLocationRequest(); Object.assign(placeDraft, {
 function resetCare() { Object.assign(careDraft, { issueTypes: [], urgency: '', birdCount: 1, description: '', resolveImmediately: false, resolutionComment: '' }); }
 function clearDrafts() { Object.assign(feedingDraft, newFeeding()); resetPlace(); resetCare(); }
 async function refreshSession() {
+  const sequence = ++sessionSequence;
   const next = await api<SessionResponse>('/session');
+  if (sequence !== sessionSequence) return;
   if (session.value && session.value.user?.id !== next.user?.id) { clearCase(); clearDrafts(); if (modal.value !== 'login') modal.value = null; }
   session.value = next; setCsrf(next);
 }
@@ -120,6 +122,7 @@ function openAction(action: 'add' | 'feeding' | 'care') {
 }
 function closeModal() { if (busy.value) return; modal.value = null; formError.value = ''; pendingModal.value = null; clearCase(); }
 async function login(persona: Persona) {
+  sessionSequence++;
   busy.value = true; formError.value = '';
   try {
     const next = await api<SessionResponse>('/dev/login', { body: { persona } });
@@ -128,6 +131,7 @@ async function login(persona: Persona) {
   } catch (caught) { formError.value = errorMessage(caught); } finally { busy.value = false; }
 }
 async function logout() {
+  sessionSequence++;
   busy.value = true; formError.value = '';
   try { await api('/auth/logout', { body: {} }); clearCase(); clearDrafts(); modal.value = null; await refreshSession(); notice.value = t('signedOut'); if (selectedId.value) await loadDetails(selectedId.value); }
   catch (caught) { formError.value = errorMessage(caught); } finally { busy.value = false; }

@@ -2,7 +2,7 @@
 
 A Vue/Bootstrap and Express prototype for a Gothenburg pigeon-feeding map and bird-care workflow, backed by persistent MongoDB. Demo places use real public landmarks; all seeded observations and accounts are fictional. The design and current milestone are described in [the prototype plan](docs/development/prototype-plan.md) and [the design](docs/designs/flock-design.md).
 
-A password-protected cloud preview is being deployed at **https://theflock.icet-lab.eu** in the separate `theflock-icet` Google Cloud project. It uses its own fictional dataset. See the [cloud-preview deployment contract and operations notes](docs/development/cloud-preview.md); it is not the public Facebook-authenticated release.
+A password-protected cloud preview is hosted at **https://theflock.icet-lab.eu** in the separate `theflock-icet` Google Cloud project. It uses its own fictional dataset. See the [cloud-preview deployment contract and operations notes](docs/development/cloud-preview.md); it is not the public Facebook-authenticated release.
 
 The four demo places are **Coop Eriksberg**, **Vårväderstorget**, **Friskväderstorget** and **Järntorget**. Their approximate map positions use [Coop Eriksberg in OpenStreetMap via Mapcarta](https://mapcarta.com/N709070783), [Vårväderstorget in OpenStreetMap via Mapcarta](https://mapcarta.com/W181129307), [Friskväderstorget in Wikidata](https://www.wikidata.org/wiki/Q10499229) and [Järntorget in Wikidata](https://www.wikidata.org/wiki/Q6319995), checked 30 October 2026. These are demo pin positions, not verified bird locations. Bird reports belong to a public place; there is no separate bird coordinate.
 
@@ -48,7 +48,7 @@ Setup generates a private replica-set keyfile and random credentials. MongoDB au
 | `.local/{api,web,mongo,dev,seed}.log` | Service and seed logs |
 | `.local/*process*.json` | Ownership records used for safe shutdown |
 
-Keep `.local` private; it is ignored by Git. Do not delete its credentials while retaining its database files. Startup deliberately refuses to reset data if the credential backup is missing. Backups and recovery automation are not implemented in this milestone.
+Keep `.local` private; it is ignored by Git. Do not delete its credentials while retaining its database files. Startup deliberately refuses to reset data if the credential backup is missing. The local launcher does not automate database backups; the separate cloud preview has its own scheduled private backups.
 
 Local development uses **plaintext HTTP and MongoDB on loopback, without TLS**. The cloud preview adds HTTPS, a password gate and a separately verified gateway secret before permitting simulated sign-in. Production mode without that explicit preview configuration is refused. Demo account selection remains a test facility, not real-user authentication.
 
@@ -71,13 +71,13 @@ Browser tests cover named public feeding/comments, dated commitments by an ordin
 
 ## GitHub Actions
 
-[CI](.github/workflows/ci.yml) runs for pull requests and is called by [Release preview](.github/workflows/release.yml) on main-branch pushes. It uses Node.js 24, authenticated MongoDB and Chromium to typecheck, run API/runtime tests, build the frontend and exercise the six browser workflows. Browser screenshots and the preview bundle are retained for seven days; runtime credentials and database files are excluded.
+[CI](.github/workflows/ci.yml) runs for pull requests and is called by [Release preview](.github/workflows/release.yml) on main-branch pushes. It uses Node.js 24, authenticated MongoDB and Chromium to typecheck, run API/runtime tests, build the frontend and exercise seven browser workflows, including delayed-session handling. Browser screenshots and the preview bundle are retained for seven days; runtime credentials and database files are excluded.
 
 The release workflow uses three Google OIDC identities to publish an immutable image, test it and sign its eligibility, then invoke the VM's constrained deployment helper through IAP. It deploys only the password-protected preview. The [CI/CD guide](docs/development/ci-cd.md) retains the earlier scaffold's evidence and the remaining public production requirements.
 
 ## Prototype boundaries
 
-This is a local milestone, not production v1. Facebook OAuth, images, account export/erasure, complete moderation administration, deployment, production certificates, automated backups, and verified emergency-directory contacts are deferred. The emergency directory therefore presents an empty state instead of invented rescue numbers. Demo accounts are seeded on the server and may be selected by anyone using this local prototype. Public records are readable by visitors; mutations require login, CSRF protection and the applicable ownership/state checks. Demo login intentionally does not prove a real person's identity.
+This is a prototype with local development and a protected cloud preview, not public production v1. Facebook OAuth, images, account export/erasure, complete moderation administration, the full production recovery/privacy requirements and verified emergency-directory contacts are deferred. The emergency directory therefore presents an empty state instead of invented rescue numbers. Demo accounts are seeded on the server and may be selected by local testers or people with the preview password. Records are visible to visitors within that access boundary; mutations require a demo session, CSRF protection and the applicable ownership/state checks. Demo login intentionally does not prove a real person's identity.
 
 ## Upgrading the earlier private-notes prototype
 

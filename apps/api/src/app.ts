@@ -44,14 +44,16 @@ export function createApp({db,client,sessionSecret,origin,preview,staticRoot,hoo
  app.get('/health/ready',async(_req,res)=>{try {await requireSchema(db);const hello=await db.command({hello:1},{timeoutMS:2000});res.status(hello.isWritablePrimary&&hello.setName==='rs0'?200:503).json({ok:!!hello.isWritablePrimary&&hello.setName==='rs0',database:'mongodb',prototype:true,...(preview?{mode:'preview',revision:preview.revision}:{})});}catch{res.status(503).json({ok:false,database:'unavailable',prototype:true});}});
  if(staticRoot){
   app.use(express.static(staticRoot,{dotfiles:'deny',index:'index.html',fallthrough:true}));
-  app.get('/',(_req,res)=>res.sendFile(resolve(staticRoot,'index.html')));
+  app.get(['/','/emergency'],(_req,res)=>res.sendFile(resolve(staticRoot,'index.html')));
  }
  app.use((req,_res,next)=>{req.requestId=randomUUID();next();});
  app.use(async(_req,_res,next)=>{try{await requireSchema(db);next();}catch{next(new ApiError(503,'SCHEMA_NOT_READY','The local database requires its reviewed schema migration.'));}});
  app.use(express.json({limit:'32kb'}));
  const store=new GuardedMongoStore(db,client);app.locals.sessionStore=store;
  const cookieName=preview?'__Host-flock.sid':'flock.dev.sid';
- app.use(session({name:cookieName,secret:sessionSecret,store,resave:false,saveUninitialized:false,rolling:true,cookie:{httpOnly:true,sameSite:'lax',secure:!!preview,path:'/',maxAge:600000}}));
+ // Ordinary reads must not send an older cookie after a concurrent login rotated
+ // the session. Idle expiry is refreshed in Mongo; browser expiry is absolute.
+ app.use(session({name:cookieName,secret:sessionSecret,store,resave:false,saveUninitialized:false,rolling:false,cookie:{httpOnly:true,sameSite:'lax',secure:!!preview,path:'/',maxAge:600000}}));
  app.use(async(req,_res,next)=>{
   req.viewer=null;
   if(!req.session.absoluteExpiresAt)req.session.absoluteExpiresAt=Date.now()+600000;
@@ -77,7 +79,7 @@ export function createApp({db,client,sessionSecret,origin,preview,staticRoot,hoo
   const {persona}=z.object({persona:z.enum(['member','member2','moderator'])}).strict().parse(req.body);
   const user=await db.collection<UserDoc>('users').findOne({_id:DEMO_IDS[persona],state:'active'});if(!user)fail(403,'ACCOUNT_UNAVAILABLE','This demo account is unavailable.');
   await new Promise<void>((resolve,reject)=>req.session.regenerate(err=>err?reject(err):resolve()));
-  req.session.userId=user!._id;req.session.authGeneration=user!.authGeneration;req.session.cookie.maxAge=day;req.session.absoluteExpiresAt=Date.now()+7*day;req.session.csrfToken=randomBytes(32).toString('hex');req.viewer=user;
+  req.session.userId=user!._id;req.session.authGeneration=user!.authGeneration;req.session.cookie.maxAge=7*day;req.session.absoluteExpiresAt=Date.now()+7*day;req.session.csrfToken=randomBytes(32).toString('hex');req.viewer=user;
   await new Promise<void>((resolve,reject)=>req.session.save(err=>err?reject(err):resolve()));
   res.json(sessionResponse(req));
  });
