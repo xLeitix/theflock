@@ -57,8 +57,8 @@ systemctl daemon-reload
 systemctl enable --now flock-release-recovery
 systemctl enable --now flock-backup.timer
 # Also block non-root SSH sessions from reading the VM service-account token.
-iptables -C OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967295 -j REJECT 2>/dev/null || iptables -A OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967295 -j REJECT
-sed -i 's/--uid-owner 1000/--uid-owner 1-4294967295/g' /etc/systemd/system/flock-metadata-guard.service
+iptables -C OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || iptables -A OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967294 -j REJECT
+sed -i 's/--uid-owner 1000/--uid-owner 1-4294967294/g' /etc/systemd/system/flock-metadata-guard.service
 systemctl daemon-reload
 echo 'Constrained deployment helper and backup timer installed.'
 if ! grep -q 'encode zstd gzip' /etc/caddy/Caddyfile; then
