@@ -31,7 +31,9 @@ try{
  assert.ok(ready,'Release image became ready');
  for(const path of ['/','/api/v1/session','/health/ready','/api/v1/places'])await expect(path,403,{headers:{'X-Flock-Gateway':'forged'}});
  await expect('/api/v1/session',400,{headers:{'X-Forwarded-Proto':'http'}});
- await expect('/api/v1/session',421,{headers:{Host:'other.invalid'}});
+ // Node fetch ignores a caller-supplied Host header; exercise the trusted
+ // loopback proxy hostname instead. The raw Host path is covered by Supertest.
+ await expect('/api/v1/session',421,{headers:{'X-Forwarded-Host':'other.invalid'}});
  const home=await expect('/',200);assert.match(await home.text(),/id="app"/);assert.match(home.headers.get('content-security-policy'),/frame-ancestors 'none'/);
  for(const path of ['/.local/runtime.json','/run/flock/runtime.json','/.env','/package.json','/apps/api/src/app.ts'])await expect(path,404);
  const health=await (await expect('/health/ready',200)).json();assert.equal(health.revision,revision);

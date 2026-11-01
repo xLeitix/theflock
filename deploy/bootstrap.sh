@@ -2,7 +2,17 @@
 # VM startup script, installed by the operator, never executed from a CI checkout.
 set -euo pipefail
 umask 077
-if test -f /var/lib/flock/bootstrap-complete; then exit 0; fi
+if test -f /var/lib/flock/bootstrap-complete; then
+  # Upgrade an already-initialized preview without touching data or credentials.
+  for uid in 1000 1-4294967294; do
+    iptables -D OUTPUT -d 169.254.169.254 -m owner --uid-owner "$uid" -j REJECT 2>/dev/null || true
+  done
+  iptables -C OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || iptables -A OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT
+  sed -i 's/-d 169.254.169.254 -m owner/-d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner/g' /etc/systemd/system/flock-metadata-guard.service
+  systemctl daemon-reload
+  systemctl restart systemd-resolved
+  exit 0
+fi
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq ca-certificates curl gnupg jq python3 openssl docker.io xfsprogs
