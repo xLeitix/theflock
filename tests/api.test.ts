@@ -58,6 +58,18 @@ test('preview configuration rejects weak gateway secrets and unexpected public o
  assert.throws(()=>createApp({db,client,sessionSecret:secret,origin:previewOrigin,preview:{...previewConfig,gatewaySecret:'weak'}}));
  assert.throws(()=>createApp({db,client,sessionSecret:secret,origin:'https://other.invalid',preview:previewConfig}));
 });
+test('anonymous resources cannot issue a competing session cookie during bootstrap',async()=>{
+ const target=createApp({db,client,sessionSecret:secret,origin:previewOrigin,preview:previewConfig});
+ const headers={'X-Flock-Gateway':previewConfig.gatewaySecret,'X-Forwarded-Proto':'https',Host:'theflock.icet-lab.eu'};
+ for(const [path,status] of [['/favicon.ico',404],['/assets/missing.js',404],['/api/v1/places',200],['/api/v1/emergency-contacts',200]] as const){
+  const response=await request(target).get(path).set(headers).expect(status);
+  assert.equal(response.headers['set-cookie'],undefined,path+' must not create a session');
+ }
+ assert.equal(await db.collection('sessions').countDocuments({}),0);
+ const bootstrap=await request(target).get('/api/v1/session').set(headers).expect(200);
+ assert.ok(bootstrap.body.csrfToken);assert.ok(bootstrap.headers['set-cookie']);
+ assert.equal(await db.collection('sessions').countDocuments({}),1);
+});
 function post(auth:Login,path:string,body:object={},key=randomUUID(),version?:number){let req=auth.agent.post(path).set('Origin',origin).set('X-CSRF-Token',auth.csrf).set('Idempotency-Key',key).set('X-Flock-Contract',PUBLIC_CONTRIBUTION_CONTRACT);if(version!==undefined)req=req.set('If-Match',String(version));return req.send(body);}
 const placeInput={name:'Test fictional place',longitude:11.9746,latitude:57.7089,publicLocationConfirmed:true};
 const careInput={placeId:DEMO_IDS.places[0],issueTypes:['limping'],urgency:'today',birdCount:1,description:'Public fictional observation at this place.'};

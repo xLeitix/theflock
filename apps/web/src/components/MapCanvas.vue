@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 let maplibregl: typeof import('maplibre-gl');
 import type { Map as LibreMap, Marker, Tile } from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import type { Place } from '../../../../packages/contracts/src/index';
 import { PILOT_CENTER } from '../../../../packages/contracts/src/index';
 import { t, locale, formatDate } from '../i18n';
@@ -76,6 +77,7 @@ onMounted(async () => {
   try {
     maplibregl = await import('maplibre-gl');
     if (disposed) return;
+    maplibregl.setWorkerUrl(workerUrl);
     const createdMap = new maplibregl.Map({ container: container.value!, center: props.coordinate || PILOT_CENTER, zoom: props.picking ? 14.4 : 13.3, minZoom: 10, maxZoom: 18,
       style: { version: 8, sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'], tileSize: 256, attribution: '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors', maxzoom: 19 } }, layers: [{ id: 'background', type: 'background', paint: { 'background-color': '#e9ece6' } }, { id: 'osm', type: 'raster', source: 'osm', paint: { 'raster-saturation': -.75, 'raster-contrast': -.12 } }] },
       attributionControl: { compact: true }, cooperativeGestures: false

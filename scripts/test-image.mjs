@@ -36,7 +36,13 @@ try{
  await expect('/api/v1/session',421,{headers:{'X-Forwarded-Host':'other.invalid'}});
  const home=await expect('/',200);assert.match(await home.text(),/id="app"/);assert.match(home.headers.get('content-security-policy'),/frame-ancestors 'none'/);
  const emergency=await expect('/emergency',200);assert.match(await emergency.text(),/id="app"/);
- for(const path of ['/.local/runtime.json','/run/flock/runtime.json','/.env','/package.json','/apps/api/src/app.ts'])await expect(path,404);
+ const assets=JSON.parse(execFileSync('docker',['exec','flock-image-test','node','-e',"console.log(JSON.stringify(require('node:fs').readdirSync('/app/apps/web/dist/assets')))" ]).toString());
+ const worker=assets.find(name=>/^maplibre-gl-worker-[\w-]+\.js$/.test(name));assert.ok(worker,'Map worker was included in the release image');
+ const workerResponse=await expect('/assets/'+worker,200);assert.match(workerResponse.headers.get('content-type'),/javascript/);assert.ok((await workerResponse.text()).length>10000);
+ for(const path of ['/.local/runtime.json','/run/flock/runtime.json','/.env','/package.json','/apps/api/src/app.ts','/favicon.ico','/assets/missing.js']){
+  const missing=await expect(path,404);assert.deepEqual(missing.headers.getSetCookie(),[],'Missing resources must not issue session cookies');
+ }
+ const publicContacts=await expect('/api/v1/emergency-contacts',200);assert.deepEqual(publicContacts.headers.getSetCookie(),[]);
  const health=await (await expect('/health/ready',200)).json();assert.equal(health.revision,revision);
  const bootstrap=await expect('/api/v1/session',200);const session=await bootstrap.json();assert.equal(session.mode,'preview');
  const cookie=bootstrap.headers.getSetCookie()[0];assert.match(cookie,/^__Host-flock.sid=/);assert.match(cookie,/; Secure/);assert.match(cookie,/; HttpOnly/);assert.match(cookie,/SameSite=Lax/);

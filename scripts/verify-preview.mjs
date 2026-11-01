@@ -12,8 +12,12 @@ const result={checkedAt:new Date().toISOString(),viewports:[],feeding:null};
 try{
  for(const viewport of [{width:390,height:844},{width:1440,height:1000}]){
   const context=await browser.newContext({viewport,httpCredentials:{origin:'https://theflock.icet-lab.eu',username:credentials.previewUsername,password:credentials.previewPassword}});
-  const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const page=await context.newPage();const errors=[],assetResponses=[];page.on('pageerror',e=>errors.push(e.message));
+  page.on('response',response=>{const url=new URL(response.url());if(url.origin==='https://theflock.icet-lab.eu'&&url.pathname.startsWith('/assets/'))assetResponses.push({path:url.pathname,status:response.status()});});
   await page.goto('https://theflock.icet-lab.eu',{waitUntil:'networkidle'});
+  const health=await page.evaluate(async()=>await(await fetch('/health/ready')).json());expect(health.ok).toBe(true);
+  if(process.env.FLOCK_EXPECTED_REVISION)expect(health.revision).toBe(process.env.FLOCK_EXPECTED_REVISION);
+  result.revision=health.revision;
   await expect(page.getByText('PROTECTED PREVIEW',{exact:true})).toBeVisible();
   await page.getByTestId('toggle-list').click();
   await page.getByTestId('place-20000000-0000-4000-8000-000000000001').click();
@@ -29,16 +33,19 @@ try{
     if(response.status!==201)throw new Error('Cloud write failed: '+response.status);
     return (await response.json()).feeding;
    },marker);
+   await writeFile('.local/cloud/preview-verification.json',JSON.stringify(result,null,2),{mode:0o600});
    await page.getByTestId('account-menu').click();await page.getByTestId('logout').click();
    await page.reload({waitUntil:'networkidle'});await page.getByTestId('toggle-list').click();await page.getByTestId('place-20000000-0000-4000-8000-000000000001').click();
    await expect(page.getByTestId('activity-log')).toContainText(marker);
   }
   const size=await page.evaluate(()=>({viewport:document.documentElement.clientWidth,page:document.documentElement.scrollWidth}));
   expect(size.page).toBeLessThanOrEqual(size.viewport+1);expect(errors).toEqual([]);
+  expect(assetResponses.filter(response=>response.status>=400)).toEqual([]);
+  expect(assetResponses.some(response=>response.path.includes('maplibre-gl-worker-')&&response.status===200)).toBe(true);
   await page.screenshot({path:`.local/cloud/screenshots/preview-${viewport.width}.png`,fullPage:true});
   await page.goto('https://theflock.icet-lab.eu/emergency',{waitUntil:'networkidle'});
   await expect(page.getByText('No verified contacts yet',{exact:true})).toBeVisible();
-  result.viewports.push({width:viewport.width,overflow:false,pageErrors:errors});
+  result.viewports.push({width:viewport.width,overflow:false,pageErrors:errors,assetsLoaded:true});
   await context.close();
  }
  await writeFile('.local/cloud/preview-verification.json',JSON.stringify(result,null,2),{mode:0o600});

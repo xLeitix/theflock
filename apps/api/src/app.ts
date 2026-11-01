@@ -46,6 +46,9 @@ export function createApp({db,client,sessionSecret,origin,preview,staticRoot,hoo
   app.use(express.static(staticRoot,{dotfiles:'deny',index:'index.html',fallthrough:true}));
   app.get(['/','/emergency'],(_req,res)=>res.sendFile(resolve(staticRoot,'index.html')));
  }
+ // Asset misses (including the browser's automatic favicon request) must not
+ // reach session creation and race the explicit session bootstrap response.
+ app.use((req,res,next)=>{if(req.path.startsWith('/api/v1/')||req.path==='/auth/logout')return next();res.status(404).end();});
  app.use((req,_res,next)=>{req.requestId=randomUUID();next();});
  app.use(async(_req,_res,next)=>{try{await requireSchema(db);next();}catch{next(new ApiError(503,'SCHEMA_NOT_READY','The local database requires its reviewed schema migration.'));}});
  app.use(express.json({limit:'32kb'}));
@@ -56,8 +59,10 @@ export function createApp({db,client,sessionSecret,origin,preview,staticRoot,hoo
  app.use(session({name:cookieName,secret:sessionSecret,store,resave:false,saveUninitialized:false,rolling:false,cookie:{httpOnly:true,sameSite:'lax',secure:!!preview,path:'/',maxAge:600000}}));
  app.use(async(req,_res,next)=>{
   req.viewer=null;
-  if(!req.session.absoluteExpiresAt)req.session.absoluteExpiresAt=Date.now()+600000;
-  if(!req.session.csrfToken)req.session.csrfToken=randomBytes(32).toString('hex');
+  if(req.method==='GET'&&req.path==='/api/v1/session'){
+   if(!req.session.absoluteExpiresAt)req.session.absoluteExpiresAt=Date.now()+600000;
+   if(!req.session.csrfToken)req.session.csrfToken=randomBytes(32).toString('hex');
+  }
   if(req.session.userId){
    req.viewer=await db.collection<UserDoc>('users').findOne({_id:req.session.userId,state:'active',authGeneration:req.session.authGeneration});
    if(!req.viewer){await new Promise<void>((resolve,reject)=>req.session.regenerate(err=>err?reject(err):resolve()));req.session.absoluteExpiresAt=Date.now()+600000;req.session.csrfToken=randomBytes(32).toString('hex');}

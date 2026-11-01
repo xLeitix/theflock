@@ -34,6 +34,8 @@ Local typechecking, API/runtime regression tests and browser workflows; containe
 - GCE uses `169.254.169.254` for DNS as well as metadata. Block non-root credential HTTP(S), preserving DNS/NTP. The initialized-VM startup path can safely apply that correction without recreating storage or secrets.
 - A deterministic browser regression reproduced a delayed anonymous session response overwriting a successful login. Session refreshes carry a generation invalidated by login/logout, and ordinary reads must not rewrite the browser's session cookie. The browser cookie lasts at most the seven-day absolute session lifetime; the guarded Mongo store still enforces the shorter 24-hour idle lifetime. These are independent limits.
 - Compiled hosting must serve the frontend for the two declared page URLs, `/` and `/emergency`, while preserving 404 responses for unknown paths and private files. Vite's development fallback was not evidence that this worked in the release image.
+- A live cold-browser check exposed a separate initial-cookie race: missing assets such as `/favicon.ico` could create an anonymous session concurrently with `/api/v1/session`. Missing resource requests now terminate before session middleware, and only the explicit session endpoint initializes anonymous sessions. A regression reproduces the prior failure; image checks also require missing resources and public directory reads to omit session cookies.
+- MapLibre 6's separate worker must be bundled explicitly using its [Vite worker URL configuration](https://maplibre.org/maplibre-gl-js/docs/). The image verifier checks that the worker is shipped and served as JavaScript, and live browser checks reject failed application assets.
 
 ## Reference checks
 
@@ -51,6 +53,8 @@ Authenticated browser checks at 390×844 and 1440×1000 verified rendering, demo
 The running app used approximately 98 MiB inside its 256 MiB container limit; the 958 MiB usable-RAM VM had about 400 MiB available. No kernel OOM event was recorded. About 88 MiB of cold pages remained in swap after provisioning; five one-second steady-state samples showed zero swap-in/out. This supports this small fictional-data preview on an `e2-micro`, not a production capacity or throughput claim.
 
 Subsequent local validation passed 34 API/runtime tests, seven browser workflows, frontend typechecking/build and server compilation. The new delayed-session regression failed before the session-generation/cookie fix and passed afterward, including a full reload with the authenticated cookie. The release-image checks now also require `/emergency` to serve the compiled frontend. The latest release workflow remains the authority for whether these later changes have reached the VM.
+
+Cold-browser investigation then reproduced anonymous cookie issuance on missing resources. The added regression failed before the restricted session-bootstrap fix and passed afterward; the expanded local suite passed all 35 API/runtime checks and seven browser workflows. The production build now includes the explicit map worker, and release-image tests verify its HTTP availability and JavaScript content type.
 
 The VM helper rejected a digest inconsistent with the signed eligibility record before changing the app. A same-image fault injection then forced candidate readiness to fail: the helper restored the prior running release, verified health, preserved the current-release record and cleared the pending journal. This exercised rollback control flow without claiming a cross-version database migration rollback test.
 
