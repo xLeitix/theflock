@@ -5,7 +5,7 @@ export type FlockBand = 'small' | 'medium' | 'large' | 'unknown';
 export type Persona = 'member' | 'member2' | 'moderator';
 export type Role = 'member' | 'moderator';
 export interface User { id: string; displayName: string; roles: Role[]; locale: Locale }
-export interface SessionResponse { user: User | null; csrfToken: string; prototype: true }
+export interface SessionResponse { user: User | null; csrfToken: string; prototype: true; mode?:'local'|'preview' }
 export interface Place { id: string; name: string; comment: string; location: { type: 'Point'; coordinates: [number, number] }; recency: Recency; lastFedLabel: string; flockBand: FlockBand; careCount: number; version: number }
 export interface Feeding { id: string; placeId: string; date: string; authorDisplayName: string; comment: string; flockBand: FlockBand; foodTypes: string[] }
 export type CareState = 'open' | 'claimed' | 'resolved';

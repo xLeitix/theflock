@@ -1,0 +1,16 @@
+{
+  "project": "theflock-icet",
+  "projectNumber": "5455359145",
+  "region": "europe-north2",
+  "zone": "europe-north2-a",
+  "instance": "flock-preview",
+  "machineType": "e2-micro",
+  "domain": "theflock.icet-lab.eu",
+  "repository": "xLeitix/theflock",
+  "repositoryId": "1440286900",
+  "ownerId": "38304",
+  "branch": "main",
+  "image": "europe-north2-docker.pkg.dev/theflock-icet/flock/app",
+  "releaseBucket": "theflock-icet-releases",
+  "backupBucket": "theflock-icet-backups"
+}

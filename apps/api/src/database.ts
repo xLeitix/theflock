@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { MongoClient, type Db } from 'mongodb';
+import {validatePreview,type PreviewConfig} from './preview.ts';
 import type { PlaceDoc, FeedingDoc, CaseDoc, UserDoc, IdempotencyDoc } from './models.ts';
-export interface RuntimeConfig { mongoUri:string; databaseName:string; sessionSecret:string; origin:string }
+export interface RuntimeConfig { mongoUri:string; databaseName:string; sessionSecret:string; origin:string;preview?:PreviewConfig }
 export function assertLocalConfig(config:RuntimeConfig) {
  if (process.env.NODE_ENV === 'production') throw new Error('The simulated-login prototype cannot run in production.');
  const uri = new URL(config.mongoUri);
@@ -10,10 +11,15 @@ export function assertLocalConfig(config:RuntimeConfig) {
  if(config.origin !== 'http://127.0.0.1:4173' || config.sessionSecret.length < 32) throw new Error('Invalid local origin or session secret.');
 }
 export async function connectDatabase(databaseName?:'flock_dev'|'flock_test') {
- const config:RuntimeConfig = JSON.parse(await readFile(new URL(databaseName === 'flock_test' ? '../../../.local/runtime.test.json' : '../../../.local/runtime.json', import.meta.url),'utf8'));
+ const config:RuntimeConfig = JSON.parse(await readFile(process.env.FLOCK_RUNTIME_FILE??new URL(databaseName === 'flock_test' ? '../../../.local/runtime.test.json' : '../../../.local/runtime.json', import.meta.url),'utf8'));
  if(databaseName) config.databaseName=databaseName;
- assertLocalConfig(config);
- const client=new MongoClient(config.mongoUri,{serverSelectionTimeoutMS:5000,connectTimeoutMS:5000,maxPoolSize:15});
+ if(config.preview&&process.env.FLOCK_REVISION)config.preview.revision=process.env.FLOCK_REVISION;
+ if(config.preview){
+  validatePreview(config.preview,config.origin);
+  const uri=new URL(config.mongoUri);
+  if(databaseName||config.databaseName!=='flock_preview'||uri.protocol!=='mongodb:'||uri.hostname!=='127.0.0.1'||!['27017','27018'].includes(uri.port)||!uri.username||!uri.password||config.sessionSecret.length<43)throw new Error('Invalid preview database boundary.');
+ }else assertLocalConfig(config);
+ const client=new MongoClient(config.mongoUri,{serverSelectionTimeoutMS:5000,connectTimeoutMS:5000,maxPoolSize:config.preview?5:15});
  await client.connect();
  const db=client.db(config.databaseName);
  const hello=await db.command({hello:1});

@@ -1,5 +1,7 @@
 # CI and production deployment starting point
 
+**Superseded delivery status, 1 November 2026:** the original no-deployment scaffold below is retained as historical evidence. The user has now authorized a password-protected preview in a separate project. [Release preview](../../.github/workflows/release.yml) replaces `cd-readiness.yml`, calls CI on main pushes and implements image verification, signed eligibility and VM deployment. See [cloud-preview.md](cloud-preview.md) for the current contract and validation. The full public-production prerequisites below remain outstanding.
+
 The public source repository is `xLeitix/theflock`. The live production target remains a Google Cloud VM running Express, the Vue/Bootstrap frontend and a local authenticated MongoDB replica set, served through HTTPS at **theflock.icet-lab.eu**. The current application is a local prototype with simulated identities and a deliberate production-startup refusal. It must not be made public as a deployed service.
 
 ## Working CI
@@ -20,7 +22,7 @@ The workflow requires no repository secrets or variables to run. Enable GitHub A
 
 ## Explicit deployment boundary
 
-[CD readiness](../../.github/workflows/cd-readiness.yml) listens for successful CI runs on a **push to this repository's main branch**. Failed CI, PR runs, forks and manually dispatched CI do not enter the readiness job. It uses no checkout, artifact execution, cloud credential or cloud API call. Its summary names the tested commit and says **Not deployed**.
+The original `cd-readiness.yml` listened for successful CI runs on a **push to this repository's main branch**. Failed CI, PR runs, forks and manually dispatched CI did not enter the readiness job. It used no checkout, artifact execution, cloud credential or cloud API call. Its summary named the tested commit and said **Not deployed**. This scaffold is now replaced by the limited preview release workflow above.
 
 Keep repository variable `FLOCK_DEPLOY_ENABLED` unset or `false`. Setting it to the exact value `true` deliberately fails the readiness job with a production-not-implemented error. This is a fail-closed scaffold, not a deployment switch that exposes the demo. A successful readiness job means only that deployment was deliberately left disabled. There is currently no production Dockerfile, release image, VM deployment helper or automated rollback to invoke.
 

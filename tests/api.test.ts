@@ -17,6 +17,8 @@ import {calendarDate,recency,stockholmToday} from '../apps/api/src/projections.t
 
 let db:Db;let client:MongoClient;let app:ReturnType<typeof createApp>;let secret:string;
 const origin='http://127.0.0.1:4173';
+const previewOrigin='https://theflock.icet-lab.eu';
+const previewConfig={mode:'preview' as const,gatewaySecret:'a'.repeat(48),revision:'1'.repeat(40)};
 const collections=['users','places','feedings','careCases','careEvents','idempotency','sessions','migrations'];
 before(async()=>{const connection=await connectDatabase('flock_test');({db,client}=connection);secret=connection.config.sessionSecret;assert.equal(db.databaseName,'flock_test');});
 after(async()=>{await client?.close();});
@@ -28,6 +30,34 @@ async function login(persona:'member'|'member2'|'moderator',target=app){
  return {agent,csrf:response.body.csrfToken as string,cookie,sid};
 }
 type Login=Awaited<ReturnType<typeof login>>;
+test('protected preview rejects missing/forged gateway, plaintext and bad hosts before creating sessions',async()=>{
+ const target=createApp({db,client,sessionSecret:secret,origin:previewOrigin,preview:previewConfig});
+ await request(target).get('/api/v1/session').expect(403);
+ await request(target).get('/health/ready').set('X-Flock-Gateway','forged').expect(403);
+ await request(target).get('/api/v1/session').set('X-Flock-Gateway',previewConfig.gatewaySecret).expect(400);
+ await request(target).get('/api/v1/session').set('X-Flock-Gateway',previewConfig.gatewaySecret).set('X-Forwarded-Proto','https').set('Host','foreign.invalid').expect(421);
+ assert.equal(await db.collection('sessions').countDocuments({}),0);
+});
+test('protected preview uses secure host-only cookies, public revision, strict origin and logout clearing',async()=>{
+ const target=createApp({db,client,sessionSecret:secret,origin:previewOrigin,preview:previewConfig});
+ const headers={'X-Flock-Gateway':previewConfig.gatewaySecret,'X-Forwarded-Proto':'https',Host:'theflock.icet-lab.eu'};
+ const bootstrap=await request(target).get('/api/v1/session').set(headers).expect(200);
+ assert.equal(bootstrap.body.mode,'preview');
+ const cookieHeader=String(bootstrap.headers['set-cookie'][0]);
+ assert.match(cookieHeader,/^__Host-flock.sid=/);assert.match(cookieHeader,/; Secure/);assert.match(cookieHeader,/; HttpOnly/);assert.match(cookieHeader,/SameSite=Lax/);assert.doesNotMatch(cookieHeader,/Domain=/);
+ assert.match(bootstrap.headers['content-security-policy'],/frame-ancestors 'none'/);
+ const cookie=cookieHeader.split(';')[0]!;
+ await request(target).post('/api/v1/dev/login').set(headers).set('Cookie',cookie).set('Origin',origin).set('X-CSRF-Token',bootstrap.body.csrfToken).send({persona:'member'}).expect(403);
+ const logged=await request(target).post('/api/v1/dev/login').set(headers).set('Cookie',cookie).set('Origin',previewOrigin).set('X-CSRF-Token',bootstrap.body.csrfToken).send({persona:'member'}).expect(200);
+ assert.equal(logged.body.user.displayName,'Alex · demo member');
+ const health=await request(target).get('/health/ready').set(headers).expect(200);assert.equal(health.body.revision,previewConfig.revision);
+ const logout=await request(target).post('/auth/logout').set(headers).set('Cookie',String(logged.headers['set-cookie'][0]).split(';')[0]!).set('Origin',previewOrigin).set('X-CSRF-Token',logged.body.csrfToken).send({}).expect(200);
+ assert.match(String(logout.headers['set-cookie'][0]),/^__Host-flock.sid=;/);assert.match(String(logout.headers['set-cookie'][0]),/; Secure/);
+});
+test('preview configuration rejects weak gateway secrets and unexpected public origins',()=>{
+ assert.throws(()=>createApp({db,client,sessionSecret:secret,origin:previewOrigin,preview:{...previewConfig,gatewaySecret:'weak'}}));
+ assert.throws(()=>createApp({db,client,sessionSecret:secret,origin:'https://other.invalid',preview:previewConfig}));
+});
 function post(auth:Login,path:string,body:object={},key=randomUUID(),version?:number){let req=auth.agent.post(path).set('Origin',origin).set('X-CSRF-Token',auth.csrf).set('Idempotency-Key',key).set('X-Flock-Contract',PUBLIC_CONTRIBUTION_CONTRACT);if(version!==undefined)req=req.set('If-Match',String(version));return req.send(body);}
 const placeInput={name:'Test fictional place',longitude:11.9746,latitude:57.7089,publicLocationConfirmed:true};
 const careInput={placeId:DEMO_IDS.places[0],issueTypes:['limping'],urgency:'today',birdCount:1,description:'Public fictional observation at this place.'};

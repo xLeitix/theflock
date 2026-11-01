@@ -2,6 +2,8 @@
 
 A Vue/Bootstrap and Express prototype for a Gothenburg pigeon-feeding map and bird-care workflow, backed by persistent MongoDB. Demo places use real public landmarks; all seeded observations and accounts are fictional. The design and current milestone are described in [the prototype plan](docs/development/prototype-plan.md) and [the design](docs/designs/flock-design.md).
 
+A password-protected cloud preview is being deployed at **https://theflock.icet-lab.eu** in the separate `theflock-icet` Google Cloud project. It uses its own fictional dataset. See the [cloud-preview deployment contract and operations notes](docs/development/cloud-preview.md); it is not the public Facebook-authenticated release.
+
 The four demo places are **Coop Eriksberg**, **Vårväderstorget**, **Friskväderstorget** and **Järntorget**. Their approximate map positions use [Coop Eriksberg in OpenStreetMap via Mapcarta](https://mapcarta.com/N709070783), [Vårväderstorget in OpenStreetMap via Mapcarta](https://mapcarta.com/W181129307), [Friskväderstorget in Wikidata](https://www.wikidata.org/wiki/Q10499229) and [Järntorget in Wikidata](https://www.wikidata.org/wiki/Q6319995), checked 30 October 2026. These are demo pin positions, not verified bird locations. Bird reports belong to a public place; there is no separate bird coordinate.
 
 Each demo place has four fictional feeding records, with varied flock sizes and food types. On first seeding, the most recent observation is about 12 hours old at Coop Eriksberg, three days at Vårväderstorget, five days at Friskväderstorget, and one day at Järntorget; older entries extend back up to six and a half days. Existing timestamps remain unchanged on later seeds, so records age naturally and are never duplicated.
@@ -48,7 +50,7 @@ Setup generates a private replica-set keyfile and random credentials. MongoDB au
 
 Keep `.local` private; it is ignored by Git. Do not delete its credentials while retaining its database files. Startup deliberately refuses to reset data if the credential backup is missing. Backups and recovery automation are not implemented in this milestone.
 
-The prototype uses **plaintext HTTP and MongoDB on loopback, without TLS**. This is a documented local development exception for fictional data. The API refuses production mode. Keep these services local; demo account selection is not an authentication solution for deployment.
+Local development uses **plaintext HTTP and MongoDB on loopback, without TLS**. The cloud preview adds HTTPS, a password gate and a separately verified gateway secret before permitting simulated sign-in. Production mode without that explicit preview configuration is refused. Demo account selection remains a test facility, not real-user authentication.
 
 ## Checks
 
@@ -69,9 +71,9 @@ Browser tests cover named public feeding/comments, dated commitments by an ordin
 
 ## GitHub Actions
 
-[CI](.github/workflows/ci.yml) runs on main-branch pushes and pull requests with Node.js 24, authenticated MongoDB and Chromium. It typechecks, runs the API/runtime tests, builds the frontend and exercises the six browser workflows. No repository secrets are needed. Browser screenshots and the preview bundle are retained for seven days; runtime credentials and database files are excluded.
+[CI](.github/workflows/ci.yml) runs for pull requests and is called by [Release preview](.github/workflows/release.yml) on main-branch pushes. It uses Node.js 24, authenticated MongoDB and Chromium to typecheck, run API/runtime tests, build the frontend and exercise the six browser workflows. Browser screenshots and the preview bundle are retained for seven days; runtime credentials and database files are excluded.
 
-[CD readiness](.github/workflows/cd-readiness.yml) follows successful main-push CI and explicitly reports **Not deployed**. Deployment is disabled until real Facebook authentication and the production VM release path are implemented. The [CI/CD guide](docs/development/ci-cd.md) records the Google Cloud, HTTPS, identity, image verification and rollback requirements for `theflock.icet-lab.eu`.
+The release workflow uses three Google OIDC identities to publish an immutable image, test it and sign its eligibility, then invoke the VM's constrained deployment helper through IAP. It deploys only the password-protected preview. The [CI/CD guide](docs/development/ci-cd.md) retains the earlier scaffold's evidence and the remaining public production requirements.
 
 ## Prototype boundaries
 

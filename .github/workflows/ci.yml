@@ -1,10 +1,9 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -99,7 +98,7 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<'SUMMARY'
           This workflow validates the local prototype with Node.js 24, authenticated MongoDB 7.0.31 and Chromium.
 
-          The frontend artifact is a preview bundle, not a production release. The prototype has simulated sign-in and deliberately refuses production startup. No cloud deployment occurs here.
+          Main pushes call this workflow from Release preview. These checks must pass before the separate image verification and protected-preview deployment jobs. Public production authentication remains unimplemented.
 
           Runtime credentials, MongoDB files, server logs, Playwright traces and cookies are never uploaded. See `docs/development/ci-cd.md` for the production readiness boundary.
           SUMMARY

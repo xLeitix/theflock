@@ -1,0 +1,131 @@
+name: Release preview
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flock-preview-release
+  cancel-in-progress: false
+
+env:
+  IMAGE: europe-north2-docker.pkg.dev/theflock-icet/flock/app
+  WIF_PROVIDER: projects/5455359145/locations/global/workloadIdentityPools/github/providers/flock
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: checks
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    environment: preview-publish
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      digest: ${{ steps.image.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: flock-publish@theflock-icet.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: Build once and publish an immutable image
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcloud auth configure-docker europe-north2-docker.pkg.dev --quiet
+          if digest=$(gcloud artifacts docker images describe "$IMAGE:$GITHUB_SHA" --format='value(image_summary.digest)' 2>/dev/null); then
+            echo 'Reusing the existing immutable commit image; verification will run again.'
+          else
+            docker build --platform=linux/amd64 --build-arg "REVISION=$GITHUB_SHA" --tag "$IMAGE:$GITHUB_SHA" .
+            docker push "$IMAGE:$GITHUB_SHA"
+            digest=$(gcloud artifacts docker images describe "$IMAGE:$GITHUB_SHA" --format='value(image_summary.digest)')
+          fi
+          [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          printf 'digest=%s\n' "$digest" >> "$GITHUB_OUTPUT"
+
+  verify:
+    needs: publish
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    environment: preview-verify
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      IMAGE_DIGEST: ${{ needs.publish.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: flock-verify@theflock-icet.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - run: npm ci
+      - run: bash scripts/ci-install-mongo.sh
+      - run: npm run dev:setup
+      - name: Pull and test the exact registry image
+        run: |
+          gcloud auth configure-docker europe-north2-docker.pkg.dev --quiet
+          docker pull "$IMAGE@$IMAGE_DIGEST"
+          FLOCK_TEST_IMAGE="$IMAGE@$IMAGE_DIGEST" node scripts/test-image.mjs
+      - name: Sign eligibility only after image tests pass
+        run: node scripts/sign-release.mjs
+      - name: Stop disposable test services
+        if: ${{ always() }}
+        run: npm run dev:stop
+
+  deploy:
+    needs: [publish, verify]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    environment:
+      name: preview-deploy
+      url: https://theflock.icet-lab.eu
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      IMAGE_DIGEST: ${{ needs.publish.outputs.digest }}
+    steps:
+      # This job deliberately executes no scripts from a repository checkout.
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: flock-deploy@theflock-icet.iam.gserviceaccount.com
+          create_credentials_file: true
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+      - name: Deploy the tested commit through the constrained VM helper
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+          latest=$(gh api repos/xLeitix/theflock/git/ref/heads/main --jq .object.sha)
+          if [ "$latest" != "$GITHUB_SHA" ]; then
+            echo 'Superseded commit: skipped, not deployed.' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          gcloud compute ssh flock-preview --project=theflock-icet --zone=europe-north2-a \
+            --tunnel-through-iap --quiet \
+            --command="sudo /usr/local/sbin/flock-deploy $GITHUB_SHA $IMAGE_DIGEST"
+          status=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' https://theflock.icet-lab.eu)
+          test "$status" = 401
+          echo 'Verified release helper completed; HTTPS preview requires authentication.' >> "$GITHUB_STEP_SUMMARY"

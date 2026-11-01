@@ -1,0 +1,11 @@
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.server.json
+!apps/
+!apps/**
+apps/web/dist
+!packages/
+!packages/**
+!Dockerfile

@@ -2,6 +2,8 @@
 
 Start with [the integrated design](flock-design.md) and the current [community-care revision](../development/community-care-revision.md). They define public attribution/comments, two roles, dated care commitments, combined activity, immediate resolution and geolocation-assisted places, alongside the production architecture.
 
+The user subsequently selected a [password-protected cloud preview](../development/cloud-preview.md) before public Facebook authentication. That document defines the limited deployment milestone and its deviations from the full production release architecture.
+
 ## Current supporting documents
 
 - [Integration decisions](decisions.md)

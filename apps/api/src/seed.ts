@@ -3,7 +3,7 @@ import { ensureIndexes } from './database.ts';
 import { DEMO_IDS, DEMO_DESCRIPTION, demoFeedingId, type UserDoc, type PlaceDoc, type FeedingDoc, type CaseDoc, type CareEventDoc } from './models.ts';
 import {migrateCommunityCare} from './migrations.ts';
 export async function seedDatabase(db:Db, options:{allowLegacyCutover?:boolean}={}) {
- if(!['flock_dev','flock_test'].includes(db.databaseName)) throw new Error('Refusing to seed a non-prototype database.');
+ if(!['flock_dev','flock_test','flock_preview'].includes(db.databaseName)) throw new Error('Refusing to seed a non-prototype database.');
  await ensureIndexes(db);
  await migrateCommunityCare(db,options);
  const now=new Date();

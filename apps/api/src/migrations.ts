@@ -6,7 +6,7 @@ interface MigrationDoc {_id:string;status:'pending'|'complete';cutoverAt:Date;co
 export async function schemaReady(db:Db){return !!await db.collection<MigrationDoc>('migrations').findOne({_id:COMMUNITY_SCHEMA,status:'complete'});}
 export async function requireSchema(db:Db){if(!await schemaReady(db))throw new Error('COMMUNITY_SCHEMA_REQUIRED: stop legacy API/workers and run the explicit community-care cutover before serving requests.');}
 export async function migrateCommunityCare(db:Db,{allowLegacyCutover=false}:{allowLegacyCutover?:boolean}={}) {
- if(!['flock_dev','flock_test'].includes(db.databaseName))throw new Error('Prototype migrations only support local disposable databases.');
+ if(!['flock_dev','flock_test','flock_preview'].includes(db.databaseName))throw new Error('Prototype migrations only support isolated prototype databases.');
  if(await schemaReady(db))return;
  const legacy=await db.collection('careCases').findOne({lifecycleVersion:{$ne:2}})||await db.collection('feedings').findOne({publicAttribution:{$exists:false}})||await db.collection('users').findOne({roles:'approved_helper'})||await db.collection('places').findOne({comment:{$exists:false}});
  if(legacy&&!allowLegacyCutover)throw new Error('Legacy records require a quiesced cutover. Stop the old application, back up data, then set FLOCK_ALLOW_COMMUNITY_CUTOVER=1 for dev:seed.');

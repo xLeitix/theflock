@@ -4,6 +4,8 @@ Status: production architecture baseline revised for public activity and communi
 
 This document is the implementation authority. Specialist proposals are supporting analysis; where they differ, the decisions here take precedence. Provider capabilities and verification gaps are recorded in [provider evidence](provider-evidence.md). The supplied [mockup](../../Pigeon%20Tracker.html) is preserved unchanged.
 
+**1 November preview milestone:** the user authorized deployment behind a shared preview password, selected a separate Google Cloud project and retained `main`. The [cloud-preview contract](../development/cloud-preview.md) governs that restricted fictional-data environment. The full public launch requirements below, including Facebook authentication, remain outstanding; they are not waived by a successful preview deployment.
+
 ## 1. Product and boundaries
 
 Flock coordinates pigeon feeding and welfare observations at shared public places. It does not track individual birds through GPS devices. Anyone can browse activity, including contributors' public display names and comments. Facebook-authenticated members contribute and can commit to care on a planned date; moderators manage content and disputes. These are the only two roles. Birds belong to places, so care reports have no separate bird coordinate. Public source code does not make secrets or database access public.

@@ -1,6 +1,8 @@
 import express, {type Request,type Response,type NextFunction} from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
+import {resolve} from 'node:path';
+import {validatePreview,gatewayMatches,type PreviewConfig} from './preview.ts';
 import {randomBytes,randomUUID,createHash,timingSafeEqual} from 'node:crypto';
 import {type Db,type MongoClient,type ClientSession,type Filter,MongoServerError} from 'mongodb';
 import {z,ZodError} from 'zod';
@@ -22,22 +24,34 @@ const digest=(value:unknown)=>createHash('sha256').update(canonical(value)).dige
 const equalToken=(a:string,b:string)=>Buffer.byteLength(a)===Buffer.byteLength(b)&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 function versionHeader(req:Request){const value=req.get('If-Match');if(!value)fail(428,'VERSION_REQUIRED','Refresh this case before making changes.');const clean=value!.replace(/^"|"$/g,'');if(!/^[1-9]\d*$/.test(clean))fail(400,'INVALID_VERSION','If-Match must contain a case version.');return Number(clean);}
 function observedTime(value:string|undefined){const now=Date.now();const date=value?new Date(value):new Date(now);if(date.getTime()<now-7*day||date.getTime()>now+300000)fail(422,'INVALID_OBSERVATION_TIME','Feeding time must be within seven days and not in the future.');return new Date(Math.min(date.getTime(),now));}
-interface AppOptions {db:Db;client:MongoClient;sessionSecret:string;origin:string;hooks?:{beforeActorFence?:()=>Promise<void>;beforeParentFence?:(placeId:string)=>Promise<void>}}
+interface AppOptions {db:Db;client:MongoClient;sessionSecret:string;origin:string;preview?:PreviewConfig;staticRoot?:string;hooks?:{beforeActorFence?:()=>Promise<void>;beforeParentFence?:(placeId:string)=>Promise<void>}}
 interface MutationResult {resourceId:string;kind:'place'|'feeding'|'case';status:number}
-export function createApp({db,client,sessionSecret,origin,hooks}:AppOptions){
- if(process.env.NODE_ENV==='production')throw new Error('The simulated-login prototype cannot run in production.');
- if(origin!=='http://127.0.0.1:4173'||sessionSecret.length<32)throw new Error('Prototype requires its loopback origin and a strong session secret.');
+export function createApp({db,client,sessionSecret,origin,preview,staticRoot,hooks}:AppOptions){
+ if(preview)validatePreview(preview,origin);
+ else if(process.env.NODE_ENV==='production')throw new Error('The simulated-login prototype cannot run in production without the protected preview gate.');
+ if((!preview&&origin!=='http://127.0.0.1:4173')||sessionSecret.length<32)throw new Error('Prototype requires its loopback origin and a strong session secret.');
  const app=express();app.disable('x-powered-by');
- app.use((req,res,next)=>{if(!['127.0.0.1','localhost'].includes(req.hostname))return res.status(421).json({error:{code:'HOST_REJECTED',message:'Use the local prototype address.'}});next();});
- app.use(helmet({contentSecurityPolicy:false,strictTransportSecurity:false}));
+ if(preview){
+  app.set('trust proxy','loopback');
+  app.use((req,res,next)=>{if(!gatewayMatches(req.get('X-Flock-Gateway'),preview.gatewaySecret))return res.status(403).json({error:{code:'PREVIEW_GATE_REQUIRED',message:'Use the protected preview address.'}});next();});
+  app.use((req,res,next)=>{if(!req.secure)return res.status(400).json({error:{code:'HTTPS_REQUIRED',message:'HTTPS is required.'}});next();});
+ }
+ app.use((req,res,next)=>{if(!(preview?[new URL(origin).hostname,'127.0.0.1','localhost']:['127.0.0.1','localhost']).includes(req.hostname))return res.status(421).json({error:{code:'HOST_REJECTED',message:'Use the configured application address.'}});next();});
+ app.use(helmet({contentSecurityPolicy:preview?{directives:{defaultSrc:["'self'"],scriptSrc:["'self'"],styleSrc:["'self'","'unsafe-inline'"],imgSrc:["'self'",'data:','blob:','https://tile.openstreetmap.org'],connectSrc:["'self'",'https://tile.openstreetmap.org'],workerSrc:["'self'",'blob:'],objectSrc:["'none'"],frameAncestors:["'none'"],baseUri:["'none'"],formAction:["'self'"]}}:false,strictTransportSecurity:preview?{maxAge:31536000,includeSubDomains:false}:false}));
  app.use((_req,res,next)=>{res.set('Cache-Control','no-store');res.set('Permissions-Policy','camera=(), microphone=(), geolocation=(self)');next();});
- app.get('/health/live',(_req,res)=>res.json({ok:true,prototype:true}));
- app.get('/health/ready',async(_req,res)=>{try {await requireSchema(db);const hello=await db.command({hello:1},{timeoutMS:2000});res.status(hello.isWritablePrimary&&hello.setName==='rs0'?200:503).json({ok:!!hello.isWritablePrimary&&hello.setName==='rs0',database:'mongodb',prototype:true});}catch{res.status(503).json({ok:false,database:'unavailable',prototype:true});}});
+ if(preview)app.use((_req,res,next)=>{res.set('Referrer-Policy','strict-origin-when-cross-origin');res.set('X-Robots-Tag','noindex, nofollow, noarchive');next();});
+ app.get('/health/live',(_req,res)=>res.json({ok:true,prototype:true,...(preview?{mode:'preview',revision:preview.revision}:{})}));
+ app.get('/health/ready',async(_req,res)=>{try {await requireSchema(db);const hello=await db.command({hello:1},{timeoutMS:2000});res.status(hello.isWritablePrimary&&hello.setName==='rs0'?200:503).json({ok:!!hello.isWritablePrimary&&hello.setName==='rs0',database:'mongodb',prototype:true,...(preview?{mode:'preview',revision:preview.revision}:{})});}catch{res.status(503).json({ok:false,database:'unavailable',prototype:true});}});
+ if(staticRoot){
+  app.use(express.static(staticRoot,{dotfiles:'deny',index:'index.html',fallthrough:true}));
+  app.get('/',(_req,res)=>res.sendFile(resolve(staticRoot,'index.html')));
+ }
  app.use((req,_res,next)=>{req.requestId=randomUUID();next();});
  app.use(async(_req,_res,next)=>{try{await requireSchema(db);next();}catch{next(new ApiError(503,'SCHEMA_NOT_READY','The local database requires its reviewed schema migration.'));}});
  app.use(express.json({limit:'32kb'}));
  const store=new GuardedMongoStore(db,client);app.locals.sessionStore=store;
- app.use(session({name:'flock.dev.sid',secret:sessionSecret,store,resave:false,saveUninitialized:false,rolling:true,cookie:{httpOnly:true,sameSite:'lax',secure:false,path:'/',maxAge:600000}}));
+ const cookieName=preview?'__Host-flock.sid':'flock.dev.sid';
+ app.use(session({name:cookieName,secret:sessionSecret,store,resave:false,saveUninitialized:false,rolling:true,cookie:{httpOnly:true,sameSite:'lax',secure:!!preview,path:'/',maxAge:600000}}));
  app.use(async(req,_res,next)=>{
   req.viewer=null;
   if(!req.session.absoluteExpiresAt)req.session.absoluteExpiresAt=Date.now()+600000;
@@ -50,14 +64,14 @@ export function createApp({db,client,sessionSecret,origin,hooks}:AppOptions){
  });
  app.use((req,_res,next)=>{
   if(['GET','HEAD','OPTIONS'].includes(req.method))return next();
-  if(req.get('Origin')!==origin||req.get('Sec-Fetch-Site')==='cross-site')return next(new ApiError(403,'ORIGIN_REJECTED','This request must come from the local prototype.'));
+  if(req.get('Origin')!==origin||req.get('Sec-Fetch-Site')==='cross-site')return next(new ApiError(403,'ORIGIN_REJECTED','This request must come from the application.'));
   const token=req.get('X-CSRF-Token');
   if(!token||!equalToken(token,req.session.csrfToken??''))return next(new ApiError(403,'CSRF_REJECTED','Refresh the page before trying again.'));
   if(!req.is('application/json'))return next(new ApiError(415,'JSON_REQUIRED','Send this request as JSON.'));
   if(!['/api/v1/dev/login','/auth/logout'].includes(req.path)&&req.get('X-Flock-Contract')!==PUBLIC_CONTRIBUTION_CONTRACT)return next(new ApiError(409,'CLIENT_UPDATE_REQUIRED','Reload Flock before contributing: display names and comments are now public.'));
   next();
  });
- const sessionResponse=(req:Request)=>({user:req.viewer?publicUser(req.viewer):null,csrfToken:req.session.csrfToken,prototype:true});
+ const sessionResponse=(req:Request)=>({user:req.viewer?publicUser(req.viewer):null,csrfToken:req.session.csrfToken,prototype:true,mode:preview?'preview':'local'});
  app.get('/api/v1/session',(req,res)=>res.json(sessionResponse(req)));
  app.post('/api/v1/dev/login',async(req,res)=>{
   const {persona}=z.object({persona:z.enum(['member','member2','moderator'])}).strict().parse(req.body);
@@ -67,7 +81,7 @@ export function createApp({db,client,sessionSecret,origin,hooks}:AppOptions){
   await new Promise<void>((resolve,reject)=>req.session.save(err=>err?reject(err):resolve()));
   res.json(sessionResponse(req));
  });
- app.post('/auth/logout',async(req,res)=>{await new Promise<void>((resolve,reject)=>req.session.destroy(err=>err?reject(err):resolve()));res.clearCookie('flock.dev.sid',{path:'/'}).json({ok:true});});
+ app.post('/auth/logout',async(req,res)=>{await new Promise<void>((resolve,reject)=>req.session.destroy(err=>err?reject(err):resolve()));res.clearCookie(cookieName,{path:'/',secure:!!preview,httpOnly:true,sameSite:'lax'}).json({ok:true});});
  app.get('/api/v1/emergency-contacts',(_req,res)=>res.json({contacts:[],region:'Gothenburg'}));
 
  async function placeById(id:string,transaction?:ClientSession,allowHidden=false){

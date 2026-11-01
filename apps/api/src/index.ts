@@ -1,8 +1,12 @@
 import {createApp} from './app.ts';
 import {connectDatabase,ensureIndexes} from './database.ts';
 import {requireSchema} from './migrations.ts';
+import {seedDatabase} from './seed.ts';
 const {client,db,config}=await connectDatabase();
 await ensureIndexes(db);
+if(config.preview)await seedDatabase(db);
 await requireSchema(db);
-const server=createApp({db,client,sessionSecret:config.sessionSecret,origin:config.origin}).listen(4300,'127.0.0.1',()=>console.log('Flock local prototype API ready at http://127.0.0.1:4300 (simulated accounts).'));
+const port=config.preview?Number(process.env.PORT??4300):4300;
+if(!Number.isInteger(port)||port<1024||port>65535)throw new Error('Invalid application port.');
+const server=createApp({db,client,sessionSecret:config.sessionSecret,origin:config.origin,preview:config.preview,staticRoot:config.preview?process.env.FLOCK_STATIC_ROOT:undefined}).listen(port,'127.0.0.1',()=>console.log(`Flock ${config.preview?'protected preview':'local prototype'} ready on loopback port ${port}.`));
 for(const signal of ['SIGINT','SIGTERM'] as const)process.on(signal,()=>server.close(()=>client.close().finally(()=>process.exit(0))));
