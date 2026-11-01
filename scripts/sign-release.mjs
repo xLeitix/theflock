@@ -9,8 +9,10 @@ if(inspected.Config.Labels['org.opencontainers.image.revision']!==revision)throw
 const payload=Buffer.from(JSON.stringify({revision,digest,image,configDigest:inspected.Id,repositoryId:'1440286900',schema:'community-care-v2',mode:'preview',runId:process.env.GITHUB_RUN_ID}));
 await writeFile('.local/release-payload.json',payload);
 execFileSync('gcloud',['kms','asymmetric-sign','--project=theflock-icet','--location=europe-north2','--keyring=flock','--key=release','--version=1','--digest-algorithm=sha256','--input-file=.local/release-payload.json','--signature-file=.local/release-signature','--quiet'],{stdio:'inherit'});
-// gcloud already writes a base64-encoded signature; do not encode it twice.
-const signature=(await readFile('.local/release-signature','utf8')).trim();
+// Current gcloud writes raw bytes; some command help describes base64 output.
+// Normalize either representation and verify the actual RSA-2048 byte length.
+const rawSignature=await readFile('.local/release-signature');
+const signature=rawSignature.length===256?rawSignature.toString('base64'):rawSignature.toString('utf8').trim();
 if(Buffer.from(signature,'base64').length!==256)throw new Error('Unexpected RSA signature format');
 await writeFile('.local/eligibility.json',JSON.stringify({payload:payload.toString('base64'),signature}));
 const destination=`gs://theflock-icet-releases/${revision}/eligibility.json`;

@@ -56,10 +56,24 @@ UNIT
 systemctl daemon-reload
 systemctl enable --now flock-release-recovery
 systemctl enable --now flock-backup.timer
-# Also block non-root SSH sessions from reading the VM service-account token.
-iptables -C OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || iptables -A OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967294 -j REJECT
-sed -i 's/--uid-owner 1000/--uid-owner 1-4294967294/g' /etc/systemd/system/flock-metadata-guard.service
+# GCE also uses the metadata IP for DNS. Block credential HTTP(S), keeping DNS/NTP.
+for uid in 1000 1-4294967294; do
+  iptables -D OUTPUT -d 169.254.169.254 -m owner --uid-owner "$uid" -j REJECT 2>/dev/null || true
+done
+iptables -C OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || iptables -A OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT
+cat > /etc/systemd/system/flock-metadata-guard.service <<'UNIT'
+[Unit]
+Description=Block non-root access to VM metadata credentials, preserving DNS
+Before=docker.service
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c '/usr/sbin/iptables -C OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || /usr/sbin/iptables -A OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT'
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target
+UNIT
 systemctl daemon-reload
+systemctl restart systemd-resolved
 echo 'Constrained deployment helper and backup timer installed.'
 if ! grep -q 'encode zstd gzip' /etc/caddy/Caddyfile; then
   sed -i '/^theflock.icet-lab.eu {/a\  encode zstd gzip' /etc/caddy/Caddyfile

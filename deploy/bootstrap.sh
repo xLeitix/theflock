@@ -114,14 +114,14 @@ fi
 rm -f /etc/flock/private/initialize.js /etc/flock/private/users.js
 
 # Only root-owned operator helpers may obtain VM/cloud credentials.
-iptables -C OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || iptables -A OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967294 -j REJECT
+iptables -C OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || iptables -A OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT
 cat > /etc/systemd/system/flock-metadata-guard.service <<'UNIT'
 [Unit]
 Description=Block Flock application access to VM metadata
 Before=docker.service
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c '/usr/sbin/iptables -C OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || /usr/sbin/iptables -A OUTPUT -d 169.254.169.254 -m owner --uid-owner 1-4294967294 -j REJECT'
+ExecStart=/bin/sh -c '/usr/sbin/iptables -C OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT 2>/dev/null || /usr/sbin/iptables -A OUTPUT -d 169.254.169.254 -p tcp -m multiport --dports 80,443 -m owner --uid-owner 1-4294967294 -j REJECT'
 RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target
